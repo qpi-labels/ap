@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>비상 대피 경로 최적화 시뮬레이션</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 2rem;
+            text-align: center;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: -webkit-linear-gradient(45deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            margin-top: 0.5rem;
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .container {
+            display: flex;
+            flex: 1;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .sidebar {
+            width: 300px;
+            background: var(--panel-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: #e2e8f0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 0.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        input[type="number"], select {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.75rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="number"]:focus, select:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .map-container {
+            width: 100%;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .result-card {
+            background: rgba(15, 23, 42, 0.6);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .result-card h3 {
+            margin: 0 0 1rem 0;
+            color: var(--text-muted);
+        }
+
+        .score {
+            font-size: 3rem;
+            font-weight: 800;
+            margin: 0;
+            color: var(--success);
+        }
+
+        .score.exp {
+            color: #a78bfa;
+        }
+
+        /* Mock Canvas Animation */
+        .node {
+            width: 15px;
+            height: 15px;
+            background: var(--accent);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 10px var(--accent);
+            animation: pulse 2s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.5); opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>비상 대피 경로 최적화 및 정체 분석</h1>
+        <p class="subtitle">건물 내 최단 경로 vs 맞춤형 회피 경로 시뮬레이션 결과 비교</p>
+    </header>
+
+    <div class="container">
+        <!-- Sidebar Settings -->
+        <aside class="sidebar">
+            <h2>시뮬레이션 설정</h2>
+            <div class="form-group">
+                <label for="peopleCount">대피 인원 수 (명)</label>
+                <input type="number" id="peopleCount" value="50" min="10" max="500">
+            </div>
+            
+            <div class="form-group">
+                <label for="layoutSelect">건물 평면도 선택</label>
+                <select id="layoutSelect">
+                    <option value="school">학교 (표준형)</option>
+                    <option value="hospital">병원 (복잡형)</option>
+                    <option value="office">사무실 (오픈형)</option>
+                </select>
+            </div>
+
+            <button onclick="runSimulation()">시뮬레이션 실행</button>
+            <p id="statusMsg" style="color: var(--success); text-align: center; opacity: 0; transition: opacity 0.3s;">완료되었습니다!</p>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="panel">
+                <h2>1. 평면도 및 이동 경로 맵</h2>
+                <div class="map-container" id="mapMockup" style="display: block;">
+                    <svg id="buildingSvg" width="100%" height="100%" viewBox="0 0 800 300">
+                        <text x="400" y="150" fill="#94a3b8" font-size="14" text-anchor="middle">[시뮬레이션을 실행하여 시각화 데이터를 확인하세요]</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>2. 대피 소요 시간 비교 (결과)</h2>
+                <div class="results-grid">
+                    <div class="result-card">
+                        <h3>대조군 (단순 최단 경로)</h3>
+                        <p class="score" id="controlScore">--</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;">단위: 초</p>
+                    </div>
+                    <div class="result-card">
+                        <h3>실험군 (정체 구간 회피)</h3>
+                        <p class="score exp" id="expScore">--</p>
+                        <p style="color: var(--text-muted); margin-top: 0.5rem;">단위: 초</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function runSimulation() {
+            const btn = document.querySelector('button');
+            const mapContainer = document.getElementById('mapMockup');
+            const controlScore = document.getElementById('controlScore');
+            const expScore = document.getElementById('expScore');
+            const statusMsg = document.getElementById('statusMsg');
+            const people = parseInt(document.getElementById('peopleCount').value) || 50;
+
+            // UI Feedback
+            btn.textContent = '실행 중...';
+            btn.style.opacity = '0.7';
+            btn.disabled = true;
+            statusMsg.style.opacity = '0';
+
+            // SVG Map Animation
+            const svgNS = "http://www.w3.org/2000/svg";
+            const svg = document.getElementById('buildingSvg');
+            svg.innerHTML = ''; // Clear previous
+
+            // Draw edges (Hallways & Paths)
+            const edges = [
+                [100, 250, 300, 250], [100, 150, 300, 150], [100, 50, 300, 50], // Rooms to Hallway
+                [300, 250, 300, 150], [300, 150, 300, 50], // Hallway to Hallway
+                [300, 250, 500, 150], [300, 150, 500, 150], [300, 50, 500, 150], // Hallway to MainHall
+                [500, 150, 700, 250], [500, 150, 700, 50], // MainHall to Exits
+                [300, 250, 700, 250], [300, 50, 700, 50] // Alternative Paths
+            ];
+            edges.forEach(e => {
+                let line = document.createElementNS(svgNS, "line");
+                line.setAttribute("x1", e[0]); line.setAttribute("y1", e[1]);
+                line.setAttribute("x2", e[2]); line.setAttribute("y2", e[3]);
+                line.setAttribute("stroke", "rgba(255, 255, 255, 0.15)");
+                line.setAttribute("stroke-width", "6");
+                line.setAttribute("stroke-linecap", "round");
+                svg.appendChild(line);
+            });
+
+            // Draw nodes (Rooms, Halls, Exits)
+            const nodes = [
+                {x: 100, y: 250, c: '#3b82f6', label: 'Room 1'}, {x: 100, y: 150, c: '#3b82f6', label: 'Room 2'}, {x: 100, y: 50, c: '#3b82f6', label: 'Room 3'},
+                {x: 300, y: 250, c: '#64748b', label: 'Hall 1'}, {x: 300, y: 150, c: '#64748b', label: 'Hall 2'}, {x: 300, y: 50, c: '#64748b', label: 'Hall 3'},
+                {x: 500, y: 150, c: '#64748b', label: 'Main Hall'},
+                {x: 700, y: 250, c: '#10b981', label: 'Exit 1'}, {x: 700, y: 50, c: '#10b981', label: 'Exit 2'}
+            ];
+            nodes.forEach(n => {
+                let circle = document.createElementNS(svgNS, "circle");
+                circle.setAttribute("cx", n.x); circle.setAttribute("cy", n.y);
+                circle.setAttribute("r", "20");
+                circle.setAttribute("fill", n.c);
+                circle.setAttribute("stroke", "rgba(255,255,255,0.2)");
+                circle.setAttribute("stroke-width", "3");
+                svg.appendChild(circle);
+                
+                let text = document.createElementNS(svgNS, "text");
+                text.setAttribute("x", n.x); text.setAttribute("y", n.y + 35);
+                text.setAttribute("fill", "#94a3b8");
+                text.setAttribute("font-size", "12");
+                text.setAttribute("font-weight", "600");
+                text.setAttribute("text-anchor", "middle");
+                text.textContent = n.label;
+                svg.appendChild(text);
+            });
+
+            // Animate people (Red dots)
+            let maxRender = Math.min(people, 150); // Prevent lag
+            for(let i=0; i<maxRender; i++) {
+                let p = document.createElementNS(svgNS, "circle");
+                p.setAttribute("r", "5");
+                p.setAttribute("fill", "#ef4444");
+                p.setAttribute("cx", "-10"); // initial offscreen
+                p.setAttribute("cy", "-10");
+                svg.appendChild(p);
+                
+                let startNodes = [0, 1, 2]; // Room indices
+                let startIdx = startNodes[Math.floor(Math.random() * startNodes.length)];
+                let start = nodes[startIdx];
+                let targetExit = Math.random() > 0.5 ? 250 : 50; // Exit Y
+                
+                // Slight random offset to prevent overlap
+                let ox = (Math.random() - 0.5) * 15;
+                let oy = (Math.random() - 0.5) * 15;
+
+                p.animate([
+                    { cx: start.x + ox, cy: start.y + oy },
+                    { cx: 300 + ox, cy: start.y + oy }, // move to nearest hallway
+                    { cx: 500 + ox, cy: 150 + oy }, // move to main hall
+                    { cx: 700 + ox, cy: targetExit + oy } // move to exit
+                ], {
+                    duration: 1500 + Math.random() * 1000,
+                    delay: Math.random() * 500,
+                    fill: "forwards",
+                    easing: "ease-in-out"
+                });
+            }
+
+            // Fake processing delay
+            setTimeout(() => {
+                btn.textContent = '시뮬레이션 실행';
+                btn.style.opacity = '1';
+                btn.disabled = false;
+                statusMsg.style.opacity = '1';
+
+                // Base calculation mock
+                let baseTime = people * 1.5 + Math.floor(Math.random() * 20);
+                
+                // Animate Numbers
+                animateValue(controlScore, 0, baseTime, 1000);
+                animateValue(expScore, 0, Math.floor(baseTime * 0.75), 1000);
+                
+            }, 1500);
+        }
+
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = (progress * (end - start) + start).toFixed(2);
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+    </script>
+</body>
+</html>
