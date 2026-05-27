@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ap",
+  "compatibility_date": "2026-05-27",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "evacuation_simulation"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}

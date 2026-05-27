@@ -1,1 +1,8 @@
 /이재원 - AP프문(수행1)SW 프로젝트 발표하기-(1) 문제 정의서.pdf
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
